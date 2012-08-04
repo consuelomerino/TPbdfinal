@@ -4,6 +4,7 @@ CREATE OR REPLACE FUNCTION f_tbi_torneo()
 RETURNS TRIGGER 
 AS $$
     BEGIN
+	--no se puede agregar un torneo si otro tiene estado de inicio
 		new.estado='inicio';
         RETURN NEW;
     END;
@@ -17,6 +18,8 @@ CREATE OR REPLACE FUNCTION f_tbi_calendario()
 RETURNS TRIGGER 
 AS $$
     BEGIN
+	--no pueden haber dos con el mismo lugar y la misma hora en la misma fecha
+	--los partidos duran 90 minutos cada uno, tener en cuenta eso!
 	if new.hora IS NULL then
 		raise exception 'Debe especificar hora';
 	end if;
@@ -70,6 +73,7 @@ DECLARE
 p_fecha date;
 p_jugador integer;
     BEGIN
+		--arreglar p q no sea fuerza bruta
 		--ver que los goles que se inserten son de la fecha actual
 		p_fecha:=(select r.fecha from goles_x_jugador g
 				join planilla p on g.id_planilla=p.id_planilla
@@ -105,6 +109,7 @@ CREATE OR REPLACE FUNCTION f_tai_goles()
 RETURNS TRIGGER 
 AS $$
     BEGIN
+		--arreglar p q no sea a fuerza bruta
 		--agrega goles del equipo1 al puntaje1 que son a favor
 		update partido p set puntaje1=puntaje1+new.a_favor 
 						where id_partido=(select distinct p.id_partido from planilla p
@@ -146,6 +151,7 @@ RETURNS TRIGGER
 AS $$
     BEGIN
 	--restan los valores a los resultados del partido
+	--que no sea tan a la fuerza bruta
 	update partido p set puntaje1=puntaje1-old.a_favor 
 						where id_partido=(select distinct p.id_partido from planilla p
 											join goles_x_jugador g on g.id_planilla=p.id_planilla

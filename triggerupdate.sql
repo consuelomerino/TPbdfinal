@@ -5,7 +5,7 @@
 	end if;
 
 	if old.estado = 'terminado' then
-		raise exception 'no se puede hacer cambios una ves finalizado';
+		raise exception 'no se puede hacer cambios una vez finalizado';
 	end if;
 	
 	if old.estado = 'en proceso' then
@@ -27,11 +27,11 @@ for each row execute procedure f_tbu_torneo();
 
 CREATE OR REPLACE FUNCTION f_tau_partido() RETURNS TRIGGER AS $$
     BEGIN
-
-		update tabla t set puntaje=puntaje+new.puntaje1
-			where id_equipo=new.id_equipo1;
-		update tabla t set puntaje=puntaje+new.puntaje2
-			where id_equipo=new.id_equipo2;
+	--no se puede cambiar la cancha a menos que no se haya jugado todavia
+--		update tabla t set puntaje=puntaje+new.puntaje1
+--			where id_equipo=new.id_equipo1;
+--		update tabla t set puntaje=puntaje+new.puntaje2
+--			where id_equipo=new.id_equipo2;
 	return NULL;
     END;
 $$ LANGUAGE plpgsql;
@@ -41,29 +41,30 @@ for each row execute procedure f_tau_partido();
 
 CREATE OR REPLACE FUNCTION f_tau_goles() RETURNS TRIGGER AS $$
     BEGIN
-
-		update partido p set puntaje1=puntaje1+new.a_favor 
+		--no se puede cambiar el id
+		--que no sea tan a fuerza bruta
+		update partido p set puntaje1=puntaje1-old.a_favor+new.a_favor 
 						where id_partido=(select distinct p.id_partido from planilla p
 											join goles_x_jugador g on g.id_planilla=p.id_planilla
 											where p.id_planilla=new.id_planilla)
 						and id_equipo1=(select distinct id_equipo from jugador j
 											join goles_x_jugador g on j.ci_jugador = g.ci_jugador where g.ci_jugador=new.ci_jugador);
 		--agrega goles del equipo1 al puntaje2, goles en contra
-		update partido p set puntaje2=puntaje2+new.contra 
+		update partido p set puntaje2=puntaje2-old.contra+new.contra 
 						where id_partido=(select distinct p.id_partido from planilla p
 											join goles_x_jugador g on g.id_planilla=p.id_planilla
 											where p.id_planilla=new.id_planilla)
 						and id_equipo1=(select distinct id_equipo from jugador j
 										join goles_x_jugador g on j.ci_jugador = g.ci_jugador where g.ci_jugador=new.ci_jugador);
 		--agrega goles del equipo2 al puntaje2 que son a favor
-		update partido p set puntaje2=puntaje2+new.a_favor
+		update partido p set puntaje2=puntaje2-old.a_favor+new.a_favor
 						where id_partido=(select distinct p.id_partido from planilla p
 											join goles_x_jugador g on g.id_planilla=p.id_planilla
 											where p.id_planilla=new.id_planilla) 
 						and id_equipo2=(select distinct id_equipo from jugador j
 										join goles_x_jugador g on j.ci_jugador = g.ci_jugador where g.ci_jugador=new.ci_jugador);
 		--agrega goles del equipo1 al puntaje2, goles en contra
-		update partido p set puntaje1=puntaje1+new.contra 
+		update partido p set puntaje1=puntaje1-old.contra+new.contra 
 						where id_partido=(select distinct p.id_partido from planilla p
 											join goles_x_jugador g on g.id_planilla=p.id_planilla
 											where p.id_planilla=new.id_planilla)
