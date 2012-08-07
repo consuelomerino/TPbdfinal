@@ -17,7 +17,7 @@ CREATE DOMAIN count as integer
 
 --TABLAS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
+-- 
 -- DROP TABLE goles_x_jugador;
 -- DROP TABLE planillas;
 -- DROP TABLE tabla_puntuaciones;
@@ -151,14 +151,14 @@ ALTER TABLE calendario
 CREATE TABLE partidos
 (
   id_partido serial NOT NULL,
-  id_ronda entero,
+  id_calendario entero,
   id_equipo1 entero,
   puntaje1 entero,
   id_equipo2 entero,
   puntaje2 entero,
   CONSTRAINT pk_partido PRIMARY KEY (id_partido ),
-  CONSTRAINT fk_ronda_x_partido FOREIGN KEY (id_ronda)
-      REFERENCES rondas (id_ronda) MATCH SIMPLE
+  CONSTRAINT fk_calendario_x_partido FOREIGN KEY (id_calendario)
+      REFERENCES calendario (id_calendario) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE CASCADE,
   CONSTRAINT pk_equipo1_x_equipo FOREIGN KEY (id_equipo1)
       REFERENCES equipos (id_equipo) MATCH SIMPLE
