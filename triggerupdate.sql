@@ -41,7 +41,6 @@ for each row execute procedure f_tau_partido();
 
 CREATE OR REPLACE FUNCTION f_tau_goles() RETURNS TRIGGER AS $$
     BEGIN
-		--no se puede cambiar el id
 		--que no sea tan a fuerza bruta
 		update partido p set puntaje1=puntaje1-old.a_favor+new.a_favor 
 						where id_partido=(select distinct p.id_partido from planilla p
@@ -82,6 +81,8 @@ CREATE OR REPLACE FUNCTION f_tbu_goles() RETURNS TRIGGER AS $$
 DECLARE
 p_fecha date;
     BEGIN
+		--no se puede cambiar el id
+		--solo se puede cambiar favor y en contra 
 		p_fecha:=(select r.fecha from goles_x_jugador g
 				join planilla p on g.id_planilla=p.id_planilla
 				join partido pa on p.id_partido=pa.id_partido
@@ -100,7 +101,7 @@ CREATE OR REPLACE FUNCTION f_tbu_planilla() RETURNS TRIGGER AS $$
 
     BEGIN
 
-		raise exception 'No se pueden actuliazar la planilla';
+		raise exception 'No se puede actualizar la planilla';
  
 	return new;
     END;
@@ -114,6 +115,7 @@ DECLARE
   p_estado character varying(20);
   p_anho integer;
     BEGIN
+	--no se pueden realizar cambios en la tabla jugador si el torneo del anho no esta en estado iniciado
 	p_anho:= (select extract (year from current_date));
 	p_estado := (select estado from torneo where anho = p_anho);
 	if p_estado !="iniciado" then
@@ -129,15 +131,14 @@ for each row execute procedure f_tbu_jugador();
 CREATE OR REPLACE FUNCTION f_tbu_calendario() RETURNS TRIGGER AS $$
 
     BEGIN
-	
+	--no se puede cambiar el PK, cancha ni fecha
+	--no pueden haber lugares iguales con la misma hora, calcular que no este en los 90 mins tampoco
+	--fecha no se puede cambiar si es que es una anterior a fecha_actual de torneo
 	if new.id_calendario!=old.id_calendario then
 		raise exception 'No se puede cambiar primary key';
 	end if;
 	if new.id_cancha!= old.id_cancha then
 		raise exception 'No se puede cambiar cambiar la cancha';
-	end if;
-	if new.fecha!= old.fecha then
-		raise exception 'No se puede cambiar cambiar la fecha';
 	end if;
 	return new;
     END;
@@ -149,7 +150,7 @@ for each row execute procedure f_tbu_calendario();
 CREATE OR REPLACE FUNCTION f_tbu_ronda() RETURNS TRIGGER AS $$
 
     BEGIN
-	
+	--solo se puede cambiar fecha perso si todavia no paso y solamente a una fecha que sea en el futuro 
 	if new.id_ronda!=old.id_ronda then
 		raise exception 'No se puede cambiar primary key';
 	end if;
@@ -170,7 +171,7 @@ for each row execute procedure f_tbu_ronda();
 CREATE OR REPLACE FUNCTION f_tbu_tabla() RETURNS TRIGGER AS $$
 
     BEGIN
-	
+	--solo se puede cambiar posicion y puntaje
 	if new.id_tabla!=old.id_tabla then
 		raise exception 'No se puede cambiar primary key';
 	end if;
