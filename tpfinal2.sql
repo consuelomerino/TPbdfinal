@@ -1,49 +1,65 @@
-﻿ 
+﻿--domains
+CREATE DOMAIN nombres as character varying(30);
+CREATE DOMAIN estados as character varying(20)
+	check( value='Iniciado'
+	or value='EnProceso'
+	or value='Terminado');
+CREATE DOMAIN dir as character varying(50);
+CREATE DOMAIN ronda_num as integer
+	check(Value between 1 and 10);
+CREATE DOMAIN entero as integer;
+CREATE DOMAIN fechas as date;
+
+CREATE DOMAIN count as integer
+	check(value between 0 and 2);
+
+
+
 --TABLAS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
---DROP TABLE goles_x_jugador;
---DROP TABLE planilla;
---DROP TABLE tabla;
---DROP TABLE partido;
---DROP TABLE calendario;
---DROP TABLE ronda;
---DROP TABLE cancha;
---DROP TABLE torneo;
---DROP TABLE jugador;
---DROP TABLE equipo;
+-- DROP TABLE goles_x_jugador;
+-- DROP TABLE planillas;
+-- DROP TABLE tabla_puntuaciones;
+-- DROP TABLE partidos;
+-- DROP TABLE calendario;
+-- DROP TABLE rondas;
+-- DROP TABLE canchas;
+-- DROP TABLE torneos;
+-- DROP TABLE jugadores;
+-- DROP TABLE equipos;
 
 --- Table: equipo
-CREATE TABLE equipo
+CREATE TABLE equipos
 (
   id_equipo serial NOT NULL,
-  nombre_equipo character varying(30),
+  nombre_equipo nombres,
   CONSTRAINT pk_equipo PRIMARY KEY (id_equipo )
 )
 WITH (
   OIDS=FALSE
 );
-ALTER TABLE equipo
+ALTER TABLE equipos
   OWNER TO postgres;
 
 
 -- Table: jugador
-CREATE TABLE jugador
+CREATE TABLE jugadores
 (
-  ci_jugador integer NOT NULL,
-  id_equipo integer,
-  apellido character varying(30),
-  edad integer,
-  nombre character varying(30),
+  ci_jugador entero NOT NULL,
+  id_equipo entero,
+  apellido nombres,
+  edad entero,
+  nombre nombres,
   CONSTRAINT pk_jugador PRIMARY KEY (ci_jugador ),
   CONSTRAINT pk_equipos_x_jugadores FOREIGN KEY (id_equipo)
-      REFERENCES equipo (id_equipo) MATCH SIMPLE
+      REFERENCES equipos (id_equipo) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION
 )
 WITH (
   OIDS=FALSE
 );
-ALTER TABLE jugador
+ALTER TABLE jugadores
   OWNER TO postgres;
 -- Table: planilla
 
@@ -52,75 +68,76 @@ ALTER TABLE jugador
 
 -- Table: torneo
 
-CREATE TABLE torneo
+CREATE TABLE torneos
 (
-  anho serial NOT NULL,
-  estado character varying(20),
-  nombre_torneo character varying(30),
-  fecha_actual date,
+  anho entero NOT NULL,
+  estado estados,
+  nombre_torneo nombres,
+  --fecha_actual fechas,
   CONSTRAINT torneo_pkey PRIMARY KEY (anho )
 )
 WITH (
   OIDS=FALSE
 );
-ALTER TABLE torneo
+ALTER TABLE torneos
   OWNER TO postgres;
 
 
 -- Table: cancha
 
 
-CREATE TABLE cancha
+CREATE TABLE canchas
 (
   id_cancha serial NOT NULL,
-  nombre_cancha character varying(25),
-  lugar character varying(50),
+  nombre_cancha nombres,
+  lugar dir,
+  veces_x_fecha count,
   CONSTRAINT pk_cancha PRIMARY KEY (id_cancha )
 )
 WITH (
   OIDS=FALSE
 );
-ALTER TABLE cancha
+ALTER TABLE canchas
   OWNER TO postgres;
 
   
 -- Table: ronda
 
 
-CREATE TABLE ronda
+CREATE TABLE rondas
 (
   id_ronda serial NOT NULL UNIQUE,
-  fecha date NOT NULL UNIQUE,
-  anho integer,
-  numero_ronda integer,
+  fecha fechas NOT NULL UNIQUE,
+  anho entero,
+  numero_ronda ronda_num,
   CONSTRAINT pk_anho_numero_ronda PRIMARY KEY (anho, numero_ronda ),
   CONSTRAINT fk_rondas_x_torneo FOREIGN KEY (anho)
-      REFERENCES torneo (anho) MATCH SIMPLE
+      REFERENCES torneos (anho) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE CASCADE
 )
 WITH (
   OIDS=FALSE
 );
-ALTER TABLE ronda
+ALTER TABLE rondas
   OWNER TO postgres;
 
 -- Table: calendario
 
 
-
 CREATE TABLE calendario
 (
   id_calendario serial NOT NULL,
-  fecha date,
+  id_ronda entero,
+  --fecha date,
   --id_partido integer,
-  id_cancha integer,
+  id_cancha entero,
   hora time without time zone,
   CONSTRAINT pk_calendario PRIMARY KEY (id_calendario ),
   CONSTRAINT fk_canchas_x_calendario FOREIGN KEY (id_cancha)
-      REFERENCES cancha (id_cancha) MATCH SIMPLE
+      REFERENCES canchas (id_cancha) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT pk_rondas_x_calendario FOREIGN KEY (fecha)
-      REFERENCES ronda (fecha) MATCH SIMPLE
+  CONSTRAINT pk_rondas_x_calendario FOREIGN KEY (id_ronda)
+      REFERENCES rondas (id_ronda) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION
 )
 WITH (
@@ -131,29 +148,29 @@ ALTER TABLE calendario
 
 
 -- Table: partido
-CREATE TABLE partido
+CREATE TABLE partidos
 (
   id_partido serial NOT NULL,
-  id_ronda integer,
-  id_equipo1 integer,
-  puntaje1 integer,
-  id_equipo2 integer,
-  puntaje2 integer,
+  id_ronda entero,
+  id_equipo1 entero,
+  puntaje1 entero,
+  id_equipo2 entero,
+  puntaje2 entero,
   CONSTRAINT pk_partido PRIMARY KEY (id_partido ),
   CONSTRAINT fk_ronda_x_partido FOREIGN KEY (id_ronda)
-      REFERENCES ronda (id_ronda) MATCH SIMPLE
+      REFERENCES rondas (id_ronda) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE CASCADE,
   CONSTRAINT pk_equipo1_x_equipo FOREIGN KEY (id_equipo1)
-      REFERENCES equipo (id_equipo) MATCH SIMPLE
+      REFERENCES equipos (id_equipo) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT pk_equipo2_equipo FOREIGN KEY (id_equipo2)
-      REFERENCES equipo (id_equipo) MATCH SIMPLE
+      REFERENCES equipos (id_equipo) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION
 )
 WITH (
   OIDS=FALSE
 );
-ALTER TABLE partido
+ALTER TABLE partidos
   OWNER TO postgres;
 
 
@@ -161,62 +178,62 @@ ALTER TABLE partido
 -- Table: tabla
 
 
-CREATE TABLE tabla
+CREATE TABLE tabla_puntuaciones
 (
   id_tabla serial NOT NULL,
-  id_equipo integer,
-  anho integer,
-  posicion integer,
-  puntaje integer,
+  id_equipo entero,
+  anho entero,
+  posicion entero,
+  puntaje entero,
   CONSTRAINT pk_id_tabla PRIMARY KEY (id_tabla ),
   CONSTRAINT pk_equipos_x_tablas FOREIGN KEY (id_equipo)
-      REFERENCES equipo (id_equipo) MATCH SIMPLE
+      REFERENCES equipos (id_equipo) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT pk_torneo_x_tablas FOREIGN KEY (anho)
-      REFERENCES torneo (anho) MATCH SIMPLE
+      REFERENCES torneos (anho) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE CASCADE
 )
 WITH (
   OIDS=FALSE
 );
-ALTER TABLE tabla
+ALTER TABLE tabla_puntuaciones
   OWNER TO postgres;
 
-CREATE TABLE planilla
+CREATE TABLE planillas
 (
   id_planilla serial NOT NULL,
-  id_partido integer,
-  ci_jugador integer,
+  id_partido entero,
+  ci_jugador entero,
   fue_titular boolean,
-  id_equipo integer,
+  id_equipo entero,
   CONSTRAINT pk_planilla PRIMARY KEY (id_planilla ),
   CONSTRAINT pk_jugadores_x_planillas FOREIGN KEY (ci_jugador)
-      REFERENCES jugador (ci_jugador) MATCH SIMPLE
+      REFERENCES jugadores (ci_jugador) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT pk_partido_x_planillas FOREIGN KEY (id_partido)
-      REFERENCES partido (id_partido) MATCH SIMPLE
+      REFERENCES partidos (id_partido) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION,
   UNIQUE (id_partido, ci_jugador)
 )
 WITH (
   OIDS=FALSE
 );
-ALTER TABLE planilla
+ALTER TABLE planillas
   OWNER TO postgres;
   
 CREATE TABLE goles_x_jugador
 (
   id_goles serial NOT NULL,
-  id_planilla integer,
-  ci_jugador integer,
-  a_favor integer,
-  contra integer,
+  id_planilla entero,
+  ci_jugador entero,
+  a_favor entero,
+  contra entero,
   CONSTRAINT pk_goles PRIMARY KEY (id_goles ),
   CONSTRAINT pk_planilla_x_goles FOREIGN KEY (id_planilla)
-      REFERENCES planilla (id_planilla) MATCH SIMPLE
+      REFERENCES planillas (id_planilla) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE CASCADE,
   CONSTRAINT pk_jugador_x_goles FOREIGN KEY (ci_jugador)
-      REFERENCES jugador (ci_jugador) MATCH SIMPLE
+      REFERENCES jugadores (ci_jugador) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION,
   UNIQUE (id_planilla, ci_jugador)
 )
@@ -230,7 +247,7 @@ ALTER TABLE goles_x_jugador
 --Alterar la secuencia de torneo para que empiece del año 1901
 
 -- DROP SEQUENCE torneo_anho_seq;
-
+/*
 ALTER SEQUENCE torneo_anho_seq
   INCREMENT 1900
   MINVALUE 1
@@ -240,5 +257,5 @@ ALTER SEQUENCE torneo_anho_seq
 ALTER TABLE torneo_anho_seq
   OWNER TO postgres;
 
- 
+ */
 
