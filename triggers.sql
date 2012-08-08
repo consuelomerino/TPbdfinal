@@ -20,7 +20,7 @@ CREATE TRIGGER tbi_torneo before insert on torneos for each row
 execute procedure f_tbi_torneo();
 
 -- funcion de error para que hora no sea null
-CREATE OR REPLACE FUNCTION f_tbi_calendario()
+CREATE OR REPLACE FUNCTION f_tbiu_calendario()
 RETURNS TRIGGER 
 AS $$
 DECLARE 
@@ -59,8 +59,8 @@ intervalo interval;
     END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER tbi_calendario before insert on calendario for each row
-execute procedure f_tbi_calendario();
+CREATE TRIGGER tbiu_calendario before insert or update on calendario for each row
+execute procedure f_tbiu_calendario();
 
 CREATE OR REPLACE FUNCTION f_tbi_partido()
 RETURNS TRIGGER 
@@ -99,7 +99,7 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER tbi_planilla before insert on planillas for each row
 execute procedure f_tbi_planilla();
 
-CREATE OR REPLACE FUNCTION f_tbi_goles()
+CREATE OR REPLACE FUNCTION f_tbiu_goles()
 RETURNS TRIGGER 
 AS $$
 DECLARE
@@ -108,8 +108,9 @@ p_jugador integer;
 a_fecha date;
 p_partido record;
     BEGIN
+	if TG_OP='INSERT' or TG_OP='UPDATE' then
 		--ver que los goles que se inserten son de la fecha actual
-		new.id_goles:=(select nextval('rondas_id_ronda_seq'));
+		new.id_goles:=(select nextval('goles_x_jugador_id_goles_seq'));
 		p_fecha:=(select r.fecha from goles_x_jugador g
 				join planillas p on g.id_planilla=p.id_planilla
 				join partidos pa on p.id_partido=pa.id_partido
@@ -120,28 +121,31 @@ p_partido record;
 			raise exception 'No se pueden agregar goles fuera de fecha';
 		end if;
 		--cerar los resultados de los goles del jugador si es que no se pasa algún parámetro
+	end if;
+	if TG_OP='INSERT' then
 		if new.a_favor IS NULL then
 			new.a_favor=0;
 		end if;
 		if new.contra IS NULL then
 			new.contra=0;
 		end if;
+	end if;
         RETURN NEW;
     END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER tbi_goles before insert on goles_x_jugador for each row
-execute procedure f_tbi_goles();
+CREATE TRIGGER tbi_goles before insert or update on goles_x_jugador for each row
+execute procedure f_tbiu_goles();
 
-CREATE OR REPLACE FUNCTION f_tai_goles()
+CREATE OR REPLACE FUNCTION f_taiu_goles()
 RETURNS TRIGGER 
 AS $$
 DECLARE
-p_idpartido integer;
-p_idequipo integer;
-p_equipo1 integer;
-p_equipo2 integer;
-    BEGIN
+	p_idpartido integer;
+	p_idequipo integer;
+	p_equipo1 integer;
+	p_equipo2 integer;
+BEGIN
 		--rescata el id de partido a la que se esta asociando los goles
 		p_idpartido:=(select distinct p.id_partido from planillas p
 				join goles_x_jugador g on g.id_planilla=p.id_planilla
@@ -173,14 +177,44 @@ p_equipo2 integer;
 					where id_partido=p_idpartido;
 
 		end if;
-
-
+	if TG_OP='UPDATE' then --faltan restar los valores de update
+		--restan los valores a los resultados del partido
+		--rescata el id de partido a la que se esta asociando los goles
+		p_idpartido:=(select distinct p.id_partido from planillas p
+				join goles_x_jugador g on g.id_planilla=p.id_planilla
+				where p.id_planilla=old.id_planilla);
+		--rescata el id de equipo del jugador
+		p_idequipo:=(select distinct id_equipo from jugadores j
+				join goles_x_jugador g on j.ci_jugador = g.ci_jugador 
+				where g.ci_jugador=old.ci_jugador);
+		--rescata el id de equipo que esta en la columna id_equipo1
+		p_equipo1:=(select id_equipo1 from partidos where id_partido=p_idpartido);
+		--guarda el id de equipo que esta en la columna id_equipo2
+		p_equipo2:=(select id_equipo2 from partidos where id_partido=p_idpartido);
+		--si el id del equipo asociado al jugador esta en la columna id_equipo1
+		if p_equipo1=p_idequipo then
+			--borra los goles del equipo 1 al puntaje 1, goles a favor
+			update partidos p set puntaje1=puntaje1-old.a_favor 
+						where id_partido=p_idpartido;
+			--borra los goles del equipo1 al puntaje2, goles en contra
+			update partidos p set puntaje2=puntaje2-old.contra 
+						where id_partido=p_idpartido;
+		else 
+		--si el id del equipo asociado al jugador esta en la columna id_equipo2
+			--borra los del equipo2 al puntaje2 que son a favor
+			update partidos p set puntaje2=puntaje2-old.a_favor
+					where id_partido=p_idpartido;
+			--borra los goles del equipo1 al puntaje2, goles en contra
+			update partidos p set puntaje1=puntaje1-old.contra 
+					where id_partido=p_idpartido;
+		end if;
+	end if;
     RETURN NULL;
     END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER tai_goles after insert on goles_x_jugador for each row
-execute procedure f_tai_goles();
+CREATE TRIGGER taiu_goles after insert on goles_x_jugador for each row
+execute procedure f_taiu_goles();
 
 CREATE OR REPLACE FUNCTION f_tad_goles()
 RETURNS TRIGGER 
