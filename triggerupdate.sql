@@ -56,8 +56,8 @@ rondactual integer;
     END;
 $$ LANGUAGE plpgsql;
 
-create trigger tbu_goles before update on goles_x_jugador
-for each row execute procedure f_tbu_goles();
+create trigger tbu_partido before update on partidos
+for each row execute procedure f_tbu_partido();
 
 CREATE OR REPLACE FUNCTION f_tbu_planilla() RETURNS TRIGGER AS $$
 
@@ -69,7 +69,7 @@ CREATE OR REPLACE FUNCTION f_tbu_planilla() RETURNS TRIGGER AS $$
     END;
 $$ LANGUAGE plpgsql;
 
-create trigger tbu_planilla before update on planilla
+create trigger tbu_planilla before update on planillas
 for each row execute procedure f_tbu_planilla();
 
 CREATE OR REPLACE FUNCTION f_tbu_jugador() RETURNS TRIGGER AS $$
@@ -87,13 +87,14 @@ DECLARE
     END;
 $$ LANGUAGE plpgsql;
 
-create trigger tbu_jugador before update on jugador
+create trigger tbu_jugador before update on jugadores
 for each row execute procedure f_tbu_jugador();
 
 CREATE OR REPLACE FUNCTION f_tbu_calendario() RETURNS TRIGGER AS $$
 DECLARE
 coincidencia time;
 a_ronda integer;
+intervalo interval;
     BEGIN
 	--no se puede modificar el primary key, la cancha ni la ronda
 	if new.id_calendario!=old.id_calendario then
@@ -150,12 +151,11 @@ CREATE OR REPLACE FUNCTION f_tbu_ronda() RETURNS TRIGGER AS $$
     END;
 $$ LANGUAGE plpgsql;
 
-create trigger tbu_ronda before update on ronda
+create trigger tbu_ronda before update on rondas
 for each row execute procedure f_tbu_ronda();
 
 
 CREATE OR REPLACE FUNCTION f_tbu_tabla() RETURNS TRIGGER AS $$
-
     BEGIN
 	--solo se puede cambiar posicion y puntaje
 	if new.id_tabla!=old.id_tabla then
@@ -171,6 +171,6 @@ CREATE OR REPLACE FUNCTION f_tbu_tabla() RETURNS TRIGGER AS $$
     END;
 $$ LANGUAGE plpgsql;
 
-create trigger tbu_talba before update on tabla
+create trigger tbu_tabla before update on tabla_puntuaciones
 for each row execute procedure f_tbu_tabla();
 
