@@ -27,6 +27,9 @@ DECLARE
 chora integer;
 coincidencia time;
 intervalo interval;
+r_canchas record;
+c_canchas integer;
+n_anho integer;
     BEGIN
 	--no pueden haber dos con el mismo lugar y la misma hora en la misma fecha
 	--los partidos duran 3 HORAS cada uno
@@ -55,6 +58,18 @@ intervalo interval;
 			raise exception 'partidos se solapan en horario!';
 		end if;
 	end if; 
+	n_anho:=(select t.anho from torneos t
+				join rondas r on t.anho=r.anho
+				join calendario c on r.id_ronda=c.id_ronda
+				where c.id_calendario=new.id_calendario);
+	--solo se pueden agregar hasta 6 canchas
+	c_canchas:=(with r_canchas as (select distinct id_cancha from calendario c
+				join rondas r on c.id_ronda=r.id_ronda
+				join torneos t on r.anho=t.anho
+				where t.anho=n_anho) select count(*) from r_canchas);
+	if c_canchas>=6 then
+		raise exception 'solo se pueden hasta 6 canchas';
+	end if;
 	RETURN NEW;
     END;
 $$ LANGUAGE plpgsql;
