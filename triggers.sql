@@ -105,21 +105,19 @@ AS $$
 DECLARE
 p_fecha date;
 p_jugador integer;
+a_fecha date;
+p_partido record;
     BEGIN
 		--ver que los goles que se inserten son de la fecha actual
+		new.id_goles:=(select nextval('rondas_id_ronda_seq'));
 		p_fecha:=(select r.fecha from goles_x_jugador g
 				join planillas p on g.id_planilla=p.id_planilla
 				join partidos pa on p.id_partido=pa.id_partido
-				join rondas r on r.id_ronda=pa.id_ronda limit 1);
-		if p_fecha IS NULL then
+				join calendario c on pa.id_calendario=c.id_calendario
+				join rondas r on c.id_ronda=r.id_ronda limit 1);
+		a_fecha:=(select fecha from rondas where id_ronda=currval('rondas_id_ronda_seq'));
+		if not(p_fecha = a_fecha) then
 			raise exception 'No se pueden agregar goles fuera de fecha';
-		end if;
-		--ver si el jugador está inscripto en el partido
-		p_jugador:=(select distinct p.ci_jugador from planillas p
-					join goles_x_jugador g on p.id_planilla=g.id_planilla
-					where p.ci_jugador=new.ci_jugador);
-		if p_jugador is NULL then
-			raise exception 'Jugador no inscripto en el partido!!!';
 		end if;
 		--cerar los resultados de los goles del jugador si es que no se pasa algún parámetro
 		if new.a_favor IS NULL then
@@ -128,8 +126,6 @@ p_jugador integer;
 		if new.contra IS NULL then
 			new.contra=0;
 		end if;
-
-		--ver que el jugador este en planilla!!!
         RETURN NEW;
     END;
 $$ LANGUAGE plpgsql;
@@ -140,36 +136,47 @@ execute procedure f_tbi_goles();
 CREATE OR REPLACE FUNCTION f_tai_goles()
 RETURNS TRIGGER 
 AS $$
+DECLARE
+p_idpartido integer;
+p_idequipo integer;
+p_equipo1 integer;
+p_equipo2 integer;
     BEGIN
-		--arreglar p q no sea a fuerza bruta
-		--agrega goles del equipo1 al puntaje1 que son a favor
-		update partidos p set puntaje1=puntaje1+new.a_favor 
-						where id_partido=(select distinct p.id_partido from planillas p
-											join goles_x_jugador g on g.id_planilla=p.id_planilla
-											where p.id_planilla=new.id_planilla)
-						and id_equipo1=(select distinct id_equipo from jugadores j
-											join goles_x_jugador g on j.ci_jugador = g.ci_jugador where g.ci_jugador=new.ci_jugador);
-		--agrega goles del equipo1 al puntaje2, goles en contra
-		update partidos p set puntaje2=puntaje2+new.contra 
-						where id_partido=(select distinct p.id_partido from planillas p
-											join goles_x_jugador g on g.id_planilla=p.id_planilla
-											where p.id_planilla=new.id_planilla)
-						and id_equipo1=(select distinct id_equipo from jugadores j
-										join goles_x_jugador g on j.ci_jugador = g.ci_jugador where g.ci_jugador=new.ci_jugador);
-		--agrega goles del equipo2 al puntaje2 que son a favor
-		update partidos p set puntaje2=puntaje2+new.a_favor
-						where id_partido=(select distinct p.id_partido from planilla p
-											join goles_x_jugador g on g.id_planilla=p.id_planilla
-											where p.id_planilla=new.id_planilla) 
-						and id_equipo2=(select distinct id_equipo from jugadores j
-										join goles_x_jugador g on j.ci_jugador = g.ci_jugador where g.ci_jugador=new.ci_jugador);
-		--agrega goles del equipo1 al puntaje2, goles en contra
-		update partidos p set puntaje1=puntaje1+new.contra 
-						where id_partido=(select distinct p.id_partido from planilla p
-											join goles_x_jugador g on g.id_planilla=p.id_planilla
-											where p.id_planilla=new.id_planilla)
-						and id_equipo2=(select distinct id_equipo from jugadores j
-										join goles_x_jugador g on j.ci_jugador = g.ci_jugador where g.ci_jugador=new.ci_jugador);										
+		--rescata el id de partido a la que se esta asociando los goles
+		p_idpartido:=(select distinct p.id_partido from planillas p
+				join goles_x_jugador g on g.id_planilla=p.id_planilla
+				where p.id_planilla=new.id_planilla);
+		--rescata el id de equipo del jugador
+		p_idequipo:=(select distinct id_equipo from jugadores j
+				join goles_x_jugador g on j.ci_jugador = g.ci_jugador 
+				where g.ci_jugador=new.ci_jugador);
+		--rescata el id de equipo que esta en la columna id_equipo1
+		p_equipo1:=(select id_equipo1 from partidos where id_partido=p_idpartido and id_equipo1=p_idequipo);
+		--guarda el id de equipo que esta en la columna id_equipo2
+		p_equipo2:=(select id_equipo2 from partidos where id_partido=p_idpartido and id_equipo2=p_idequipo);
+		--si el id del equipo asociado al jugador esta en la columna id_equipo1
+		if p_equipo1=p_idequipo then
+			--agrega goles del equipo 1 al puntaje 1, goles a favor
+			update partidos p set puntaje1=puntaje1+new.a_favor 
+						where id_partido=p_idpartido
+						and id_equipo1=p_idequipo;
+			--agrega goles del equipo1 al puntaje2, goles en contra
+			update partidos p set puntaje2=puntaje2+new.contra 
+						where id_partido=p_idpartido
+						and id_equipo1=p_idequipo;
+		else 
+		--si el id del equipo asociado al jugador esta en la columna id_equipo2
+			--agrega goles del equipo2 al puntaje2 que son a favor
+			update partidos p set puntaje2=puntaje2+new.a_favor
+					where id_partido=p_idpartido
+					and id_equipo2=p_idequipo;
+			--agrega goles del equipo1 al puntaje2, goles en contra
+			update partidos p set puntaje1=puntaje1+new.contra 
+					where id_partido=p_idpartido
+					and id_equipo2=p_idequipo;
+
+		end if;
+
 
     RETURN NULL;
     END;
