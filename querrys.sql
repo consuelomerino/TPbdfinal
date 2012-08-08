@@ -1,7 +1,7 @@
 ﻿
 
 create or replace function f_querry1 (p_anho integer, p_ronda integer)
-returns null
+returns void
 as $$
 declare
 	v_eq1 nombres;
@@ -20,3 +20,18 @@ begin
 
 	create or replace view querry1 as
 		select fecha, cancha, v_eq1, v_eq2 from r_aux;
+
+end;
+ $$ language plpgsql;
+
+create or replace function f_querry2 (p_anho integer, p_ronda integer)
+returns void
+as $$
+declare
+
+begin
+
+
+
+end;
+ $$ language plpgsql;
