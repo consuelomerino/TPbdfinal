@@ -225,17 +225,12 @@ CREATE TABLE goles_x_jugador
 (
   id_goles serial NOT NULL,
   id_planilla entero,
-  ci_jugador entero,
   a_favor entero,
   contra entero,
   CONSTRAINT pk_goles PRIMARY KEY (id_goles ),
   CONSTRAINT pk_planilla_x_goles FOREIGN KEY (id_planilla)
       REFERENCES planillas (id_planilla) MATCH SIMPLE
-      ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT pk_jugador_x_goles FOREIGN KEY (ci_jugador)
-      REFERENCES jugadores (ci_jugador) MATCH SIMPLE
-      ON UPDATE NO ACTION ON DELETE NO ACTION,
-  UNIQUE (id_planilla, ci_jugador)
+      ON UPDATE NO ACTION ON DELETE CASCADE
 )
 WITH (
   OIDS=FALSE
