@@ -1,6 +1,6 @@
-﻿select f_querry4('4-4-2010')
-select * from posiciones_dadafecha order by puntaje desc;
-drop function f_querry4(date);
+﻿--select f_querry4('4-4-2010')
+--select * from posiciones_dadafecha order by puntaje desc;
+--drop function f_querry4(date);
 create or replace function f_querry4 (p_fecha date)
 returns void
 as $$
