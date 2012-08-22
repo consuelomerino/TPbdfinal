@@ -126,12 +126,13 @@ p_partido record;
 	if TG_OP='INSERT' or TG_OP='UPDATE' then
 		--ver que los goles que se inserten son de la fecha actual
 		new.id_goles:=(select nextval('goles_x_jugador_id_goles_seq'));
-		p_fecha:=(select r.fecha from goles_x_jugador g
-				join planillas p on g.id_planilla=p.id_planilla
+		p_fecha:=(select r.fecha from planillas p
 				join partidos pa on p.id_partido=pa.id_partido
 				join calendario c on pa.id_calendario=c.id_calendario
-				join rondas r on c.id_ronda=r.id_ronda limit 1);
+				join rondas r on c.id_ronda=r.id_ronda 
+				and p.id_planilla=new.id_planilla limit 1);
 		a_fecha:=(select fecha from rondas where id_ronda=currval('rondas_id_ronda_seq'));
+
 		if not(p_fecha = a_fecha) then
 			raise exception 'No se pueden agregar goles fuera de fecha';
 		end if;
@@ -149,26 +150,32 @@ p_partido record;
     END;
 $$ LANGUAGE plpgsql;
 
+
 CREATE TRIGGER tbi_goles before insert or update on goles_x_jugador for each row
-execute procedure f_tbiu_goles();
+execute procedure f_tbiu_goles(); 
+
 
 CREATE OR REPLACE FUNCTION f_taiu_goles()
 RETURNS TRIGGER 
 AS $$
 DECLARE
+	p_cijugador integer;
 	p_idpartido integer;
 	p_idequipo integer;
 	p_equipo1 integer;
 	p_equipo2 integer;
 BEGIN
+		--rescata el id del jugador que metio el gol
+		p_cijugador:=(select distinct p.ci_jugador from planillas p
+				where p.id_planilla=new.id_planilla);
 		--rescata el id de partido a la que se esta asociando los goles
 		p_idpartido:=(select distinct p.id_partido from planillas p
 				join goles_x_jugador g on g.id_planilla=p.id_planilla
 				where p.id_planilla=new.id_planilla);
 		--rescata el id de equipo del jugador
-		p_idequipo:=(select distinct id_equipo from jugadores j
-				join goles_x_jugador g on j.ci_jugador = g.ci_jugador 
-				where g.ci_jugador=new.ci_jugador);
+		p_idequipo:=(select distinct j.id_equipo from jugadores j
+				join planillas p on j.ci_jugador=p.ci_jugador
+				where j.ci_jugador=p_cijugador and p.id_planilla=new.id_planilla);
 		--rescata el id de equipo que esta en la columna id_equipo1
 		p_equipo1:=(select id_equipo1 from partidos where id_partido=p_idpartido);
 		--guarda el id de equipo que esta en la columna id_equipo2

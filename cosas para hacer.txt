@@ -1,3 +1,0 @@
-Cosas que tenemos que hacer todavia:
-Consistencia de triggers
-Funcion
