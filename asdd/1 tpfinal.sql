@@ -237,20 +237,4 @@ WITH (
 );
 ALTER TABLE goles_x_jugador
   OWNER TO postgres;
-  
-  
---Alterar la secuencia de torneo para que empiece del año 1901
-
--- DROP SEQUENCE torneo_anho_seq;
-/*
-ALTER SEQUENCE torneo_anho_seq
-  INCREMENT 1900
-  MINVALUE 1
-  MAXVALUE 9223372036854775807
-  START 1900
-  CACHE 1;
-ALTER TABLE torneo_anho_seq
-  OWNER TO postgres;
-
- */
 

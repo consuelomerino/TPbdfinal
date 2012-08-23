@@ -1,21 +1,4 @@
-﻿--select * from partidos;
---select * from calendario;
---select * from rondas;
---insert into rondas (fecha, anho, numero_ronda) values ('12-13-2001', 2001, 5);
---insert into calendario(id_ronda, id_cancha, hora) values (currval('rondas_id_ronda_seq'), 1, '10:00');
---insert into partidos (id_calendario, id_equipo1, id_equipo2) values (currval('calendario_id_calendario_seq'),16,18);
---select * from rondas where id_ronda=currval('rondas_id_ronda_seq');
---select * from planillas;
---select * from partidos;
---select * from goles_x_jugador;
---select * from calendario;
---select * from jugadores;
---MODO DE USO: Una vez generada el sorteo para la ronda, ejecutar f_ronda1() 
---que llena la planilla de jugadores
---select * from f_ronda1();
---LUEGO, insertar goles... inserta 2 a 1 en todos los partidos de la ronda
---select * from f_golesronda1();
-
+﻿
 
 --inserta todos los jugadores en las planillas de una de todos los equipos que participan en esa ronda
 CREATE OR REPLACE FUNCTION f_ronda1()

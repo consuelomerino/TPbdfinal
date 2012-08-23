@@ -14,4 +14,4 @@ begin
 end;
 $$ language plpgsql;
 
-select f_cargaTabla(2001);
+--select f_cargaTabla(2001);

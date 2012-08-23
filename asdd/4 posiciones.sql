@@ -25,20 +25,6 @@ begin
 
 	raise notice '%',p_ronda;	
 			
-/*
-	drop view eliminacion;
-	create view eliminacion as
-		select t.id_equipo, t.puntaje, (count(p1.id_partido)+count(p2.id_partido)) as perdidos, trunc(random() * 23 + 1) as aleatorio
-		from tabla_puntuaciones t inner join torneos on (t.anho=torneos.anho)
-		inner join rondas r on (torneos.anho=r.anho)
-		inner join calendario c on (r.id_ronda=c.id_ronda)
-		inner join partidos p1 on (c.id_calendario=p1.id_calendario)
-		inner join partidos p2 on (c.id_calendario=p2.id_calendario)
-		where t.anho=p_anho and t.posicion<=v_pos and
-		((t.id_equipo=p1.id_equipo1 and p1.puntaje1<p1.puntaje2)
-		or (t.id_equipo=p2.id_equipo2 and p2.puntaje2<p2.puntaje1))
-		order by t.puntaje desc, perdidos asc, aleatorio asc;
-*/
 
 	drop table if exists eliminacion;
 	create temp table eliminacion as

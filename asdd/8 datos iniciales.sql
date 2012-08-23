@@ -1,10 +1,10 @@
-﻿select * from equipos;
+﻿--select * from equipos;
 --primero el torneo (anho, estado, nombre_torneo)
 insert into torneos values (2001, 'Iniciado', 'Copa America');
 --equipo (id_equipo, nombre_equipo)
 insert into equipos (nombre_equipo) values ('Olimpia');
 --jugadores (ci_jugadores, id_equipo, apellido, edad, nombre)
-select * from jugadores;
+--select * from jugadores;
 
 
 insert into jugadores values (2346547, currval('equipos_id_equipo_seq'), 'Lopez', 23, 'Juan');
