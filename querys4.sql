@@ -10,7 +10,7 @@ isitnull integer;
 begin
 	--puntos ganados a una fecha dada
 	--me da una fecha y busca la ronda mas aproximada, suma los puntos de las planillas que estan en todas esas rondas de ese anho hasta la fecha
-	drop table if exists posiciones_dadafecha;
+	drop table if exists posiciones_dadafecha cascade;
 	create temporary table posiciones_dadafecha(
 		id_equipo integer,
 		puntaje integer
@@ -28,14 +28,14 @@ begin
 			if isitnull is null then
 				insert into posiciones_dadafecha values (red.id_equipo2, 2);
 			else 
-				update posiciones_dadafecha pp set pp.puntaje=pp.puntaje+2 
-					where pp.id_equipo=red.id_equipo2;
+				update posiciones_dadafecha set puntaje=puntaje+2 
+					where id_equipo=red.id_equipo2;
 			end if;
 			isitnull:=(select id_equipo from posiciones_dadafecha pp 
 					join partidos r on pp.id_equipo=r.id_equipo1 limit 1);
 			--para que agregue tambien al contrincante que perdio pero sin puntaje \
 			if isitnull is null then
-				insert into posiciones_dadafecha values (red.id_equipo2, 0);
+				insert into posiciones_dadafecha values (red.id_equipo1, 0);
 			end if;
 		--si es que el puntaje del primer equipo es peor que del segundo, lo guarda en la tabla temporal
 		elsif red.puntaje1>red.puntaje2 then
@@ -44,13 +44,13 @@ begin
 			if isitnull is null then
 				insert into posiciones_dadafecha values (red.id_equipo1, 2);
 			else 
-				update posiciones_dadafecha pp set pp.puntaje=pp.puntaje+2 
-					where pp.id_equipo=r.id_equipo1;
+				update posiciones_dadafecha set puntaje=puntaje+2 
+					where id_equipo=red.id_equipo1;
 			end if;
 			isitnull:=(select id_equipo from posiciones_dadafecha pp join partidos r on pp.id_equipo=r.id_equipo2 limit 1);
 			--Tambien guarda al que pierde pero sin puntaje
 			if isitnull is null then
-				insert into posiciones_dadafecha values(red.id_equipo1, 0);
+				insert into posiciones_dadafecha values(red.id_equipo2, 0);
 			end if;
 		else
 			--si no se cumplen las condiciones anteriores, entonces fue un empate
@@ -71,6 +71,7 @@ begin
 			end if;
 		end if;
 	end loop;
-	return;
+
+	create or replace view query4 as (select * from posiciones_dadafecha order by puntaje DESC);
 end;
  $$ language plpgsql;

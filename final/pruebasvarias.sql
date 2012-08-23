@@ -7,7 +7,7 @@ select f_generar_ronda('26-05-2001');
 
 
 
-select f_querry4('01-05-2001');
+
 
 select f_querry1(2001, 1);
 
@@ -25,4 +25,10 @@ select f_query5(2001, '27-07-2001');
 
 select * from query5;
 
+select f_query6('27-07-2001');
 
+select * from query6;
+
+select f_querry4('22-02-2001');
+
+select * from query4;
