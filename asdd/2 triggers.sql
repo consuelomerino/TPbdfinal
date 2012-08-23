@@ -164,7 +164,14 @@ DECLARE
 	p_idequipo integer;
 	p_equipo1 integer;
 	p_equipo2 integer;
+	p_titulares integer;
 BEGIN
+		--si es que no tiene al menos 11 jugadores titulares, no se puede comenzar a asignar los goles
+		p_titulares:=(select count(*) from planillas 
+				where fue_titular=TRUE and id_equipo=1new.id_equipo);
+		if p_titulares < 11 then
+			raise exception 'ERROR!! La cantidad de titulares debe ser al menos 11';
+		end;
 		--rescata el id del jugador que metio el gol
 		p_cijugador:=(select distinct p.ci_jugador from planillas p
 				where p.id_planilla=new.id_planilla);
