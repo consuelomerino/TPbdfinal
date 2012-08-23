@@ -5,13 +5,16 @@
 		raise exception 'no se puede cambiar el año';
 	end if;
 	--no se puede cambiar nada una vez que el torneo este finalizado
-	if old.estado = 'terminado' then
+	if old.estado = 'Terminado' or 'terminado' then
 		raise exception 'no se puede hacer cambios una vez finalizado';
 	end if;
 	--no se puede modificar el nombre
-	if old.estado = 'en proceso' then
+	if old.estado = 'en proceso' or 'En Proceso' then
 		if old.nombre_torneo != new.nombre_torneo then
 			raise exception 'no se puede modificar una vez iniciado';
+		end if;
+		if new.estado = 'Iniciado' or new.estado='iniciado' then
+			raise exception 'No se puede volver a Iniciado una vez en proceso';
 		end if;
 	end if;
 	--solamente se puede cambiar el nombre cuando el torneo esta iniciando 
@@ -22,6 +25,17 @@ $$ LANGUAGE plpgsql;
 create trigger tbu_torneo before update on torneos
 for each row execute procedure f_tbu_torneo();
 
+CREATE OR REPLACE FUNCTION f_tbd_torneo() RETURNS TRIGGER AS $$
+    BEGIN
+	if old.estado != 'Iniciado' then
+		raise exception 'No se puede borrar el torneo una vez iniciado';
+	end if;
+	return old;
+    END;
+$$ LANGUAGE plpgsql;
+
+create trigger tbd_torneo before update on torneos
+for each row execute procedure f_tbd_torneo();
 
 CREATE OR REPLACE FUNCTION f_tbu_partido() RETURNS TRIGGER AS $$
 DECLARE
@@ -30,8 +44,7 @@ fechatrigger date;
 ronda integer;
 rondactual integer;
     BEGIN
-	--no se puede cambiar la cancha a menos que no se haya jugado todavia
-	--se puede cambiar solo si el estado se esta jugando la ronda en si
+	--se puede cambiar solo si se esta jugando la ronda en si
 	if old.id_partido!=new.id_partido or old.id_equipo1!=new.id_equipo1 or
 		old.id_equipo2!=new.id_equipo2 then
 		raise exception 'No se pueden modificar otros campos que no sean los puntajes';
@@ -173,4 +186,68 @@ $$ LANGUAGE plpgsql;
 
 create trigger tbu_tabla before update on tabla_puntuaciones
 for each row execute procedure f_tbu_tabla();
+
+CREATE OR REPLACE FUNCTION f_tbu_puntuacion()
+RETURNS TRIGGER 
+AS $$
+declare
+	p_estado estados;
+	esnull integer;
+    BEGIN
+
+	--si el estado del torneo es en proceso, se puede actualizar, luego ya no
+	p_estado:=(select estado from torneo where anho=new.anho);
+	if p_estado != 'En Proceso' then
+		raise exception 'Una vez iniciado el torneo, no se pueden agregar nuevos registros';
+	end if;
+	if new.id_tabla!=old.id_table or new.id_equipo!=old.id_equipo or new.anho!=old.anho then
+		raise exception 'No se pueden cambiar los campos de equipo y anho una vez iniciado el torneo';
+	end if;
+	esnull:=(select id_equipo from partidos where id_equipo1=new.id_equipo or id_equipo2=new.id_equipo);
+	if esnull!=NULL then
+		raise exception 'Equipo que participa no se puede borrar';
+	end if;
+        RETURN NEW;
+    END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tbu_puntuacion before update on tabla_puntuaciones for each row
+execute procedure f_tbu_puntuacion();
+
+
+CREATE OR REPLACE FUNCTION f_tbu_rondas()
+RETURNS TRIGGER 
+AS $$
+    BEGIN
+	raise exception 'No se puede actualizar la ronda';
+        RETURN NEW;
+    END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tbu_rondas before update on rondas for each row
+execute procedure f_tbu_rondas();
+
+CREATE OR REPLACE FUNCTION f_tbd_rondas()
+RETURNS TRIGGER 
+AS $$
+declare
+	cld integer,
+	est estados
+    BEGIN
+
+	select into est estado from torneo where anho=old.anho;
+	if (est='Terminado') then
+		raise exception "no se puede borrar una vez termado el torneo";
+	end if;
+	select into cld c.id_ronda from calendario c where c.id_ronda=old.id_ronda;
+	if (cld is not null) then
+		raise exception "no se puede borrar si hay entradas en calendario";
+	end if;
+
+	return old;
+    END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tbd_rondas before delete on rondas for each row
+execute procedure f_tbd_rondas();
 

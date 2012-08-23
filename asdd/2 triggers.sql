@@ -5,11 +5,16 @@ RETURNS TRIGGER
 AS $$
 DECLARE 
 pnombretorneo character varying(30);
+panho integer;
     BEGIN
 	--no se puede agregar un torneo si algun otro está en proceso
 	pnombretorneo:=(select distinct nombre_torneo from torneos where estado='Iniciado' or estado='EnProceso' limit 1);
 	if pnombretorneo is not NULL then
 		raise exception 'No pueden haber mas de dos torneos en proceso al mismo tiempo';
+	end if;
+	panho:=(select MAX(anho) from torneos);
+	if panho >= new.anho then
+		raise exception 'ERROR! Anho menor que el maximo jugado. El torneo no se puede jugar antes de uno ya jugado!!';
 	end if;
 	new.estado:='Iniciado';
         RETURN NEW;
@@ -80,16 +85,55 @@ execute procedure f_tbiu_calendario();
 CREATE OR REPLACE FUNCTION f_tbi_partido()
 RETURNS TRIGGER 
 AS $$
+declare
+rondaactual integer;
+ultimaronda integer;
     BEGIN
 		--cera los puntajes
 		new.puntaje1=0;
 		new.puntaje2=0;
+
+		rondaactual:=(select r.id_ronda from rondas r
+				join calendario c on r.id_ronda=c.id_ronda
+				where c.id_calendario=new.id_calendario);
+		ultimaronda:=(select MAX(id_ronda) from rondas);
+		if rondaactual!=ultimaronda then
+			raise exception 'No se puede insertar un partido de otra ronda que no sea la actual';
+		end if;		
         RETURN NEW;
     END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER tbi_partido before insert on partidos for each row
 execute procedure f_tbi_partido();
+
+
+
+CREATE OR REPLACE FUNCTION f_tbi_rondas()
+RETURNS TRIGGER 
+AS $$
+declare
+	p_estado estados;
+	p_fecha fechas;
+    BEGIN
+	p_estado:=(select estado from torneo where anho=new.anho);
+	if p_estado='Terminado' then
+		raise exception 'Torneo ya terminado, no se pueden agregar nuevas rondas!';
+	end if;
+	p_fecha:=(select MAX(fecha) from rondas where anho=new.anho);
+	if p_fecha > new.fecha then
+		raise exception 'Fecha menor a la ultima jugada';
+	end if;
+        RETURN NEW;
+    END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tbi_rondas before insert on rondas for each row
+execute procedure f_tbi_rondas();
+
+
+
+
 
 CREATE OR REPLACE FUNCTION f_tbi_planilla()
 RETURNS TRIGGER 
@@ -294,3 +338,25 @@ $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER tad_goles after delete on goles_x_jugador for each row
 execute procedure f_tad_goles();
+
+
+CREATE OR REPLACE FUNCTION f_tbi_puntuacion()
+RETURNS TRIGGER 
+AS $$
+declare
+	p_estado estados;
+    BEGIN
+
+	--si el estado del torneo es iniciado, se puede insertar, luego ya no
+	p_estado:=(select estado from torneo where anho=new.anho);
+	if p_estado != 'Iniciado' then
+		raise exception 'Una vez iniciado el torneo, no se pueden agregar nuevos registros';
+	end if;
+	new.posicion:=0;
+	new.puntaje:=0;
+        RETURN NEW;
+    END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tbi_puntuacion before insert on tablapuntuacion for each row
+execute procedure f_tbi_partido();
