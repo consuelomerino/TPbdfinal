@@ -31,7 +31,8 @@ begin
 		update torneos set estado='EnProceso' where anho=v_anho;
 		update canchas set veces_x_fecha=2; --para controlar que no se use mas de 2 veces una cancha
 		insert into rondas (fecha, anho, numero_ronda) values (dia, v_anho, 1); --crea la primera ronda 
-		v_valron:= currval('rondas_id_ronda_seq');
+		v_valron:= (select id_ronda from rondas order by id_ronda DESC limit 1);
+		--currval('rondas_id_ronda_seq');
 		for j in 0 .. 5 loop
 			--elige una cancha random
 			select into r_aux1 * from canchas where veces_x_fecha>0 order by random() limit 1;
@@ -58,7 +59,7 @@ begin
 			if (v_anho is not null) then
 
 				update canchas set veces_x_fecha=2;
-				v_valron:= currval('rondas_id_ronda_seq');
+				v_valron:= (select id_ronda from rondas order by id_ronda DESC limit 1);
 				select into x numero_ronda from rondas where id_ronda=v_valron;
 				raise notice '%',x;
 				PERFORM f_puntaje_a_tabla(v_anho,x);
@@ -66,7 +67,7 @@ begin
 				PERFORM f_posicion(v_anho,x);
 				if x < 8 then
 					insert into rondas (fecha, anho, numero_ronda) values (dia, v_anho, x+1);
-					v_valron2:= currval('rondas_id_ronda_seq');
+					v_valron2:= (select id_ronda from rondas order by id_ronda DESC limit 1);
 					if x <3 then
 						v_n_par := 6;
 					else

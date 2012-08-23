@@ -1,5 +1,5 @@
 ﻿--select f_querry4('4-4-2010')
-create or replace function f_querry4 (fecha date)
+create or replace function f_querry4 (p_fecha date)
 returns void
 as $$
 declare
